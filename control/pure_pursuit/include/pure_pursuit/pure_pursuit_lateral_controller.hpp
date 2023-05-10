@@ -100,10 +100,10 @@ struct DebugData
 class PurePursuitLateralController : public LateralControllerBase
 {
 public:
-  explicit PurePursuitLateralController(rclcpp::Node & node);
+  explicit PurePursuitLateralController(rclcpp::Node::SharedPtr node_ptr);
 
 private:
-  rclcpp::Node::SharedPtr node_;
+  rclcpp::Node::WeakPtr node_weak_ptr_;
   std::vector<TrajectoryPoint> output_tp_array_;
   autoware_auto_planning_msgs::msg::Trajectory::SharedPtr trajectory_resampled_;
   autoware_auto_planning_msgs::msg::Trajectory trajectory_;

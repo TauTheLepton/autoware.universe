@@ -34,33 +34,6 @@ Controller::Controller(const rclcpp::NodeOptions & node_options) : Node("control
   const double ctrl_period = declare_parameter<double>("ctrl_period");
   timeout_thr_sec_ = declare_parameter<double>("timeout_thr_sec");
 
-  const auto lateral_controller_mode =
-    getLateralControllerMode(declare_parameter<std::string>("lateral_controller_mode"));
-  switch (lateral_controller_mode) {
-    case LateralControllerMode::MPC: {
-      lateral_controller_ = std::make_shared<mpc_lateral_controller::MpcLateralController>(*this);
-      break;
-    }
-    case LateralControllerMode::PURE_PURSUIT: {
-      lateral_controller_ = std::make_shared<pure_pursuit::PurePursuitLateralController>(this->shared_from_this());
-      break;
-    }
-    default:
-      throw std::domain_error("[LateralController] invalid algorithm");
-  }
-
-  const auto longitudinal_controller_mode =
-    getLongitudinalControllerMode(declare_parameter<std::string>("longitudinal_controller_mode"));
-  switch (longitudinal_controller_mode) {
-    case LongitudinalControllerMode::PID: {
-      longitudinal_controller_ =
-        std::make_shared<pid_longitudinal_controller::PidLongitudinalController>(*this);
-      break;
-    }
-    default:
-      throw std::domain_error("[LongitudinalController] invalid algorithm");
-  }
-
   sub_ref_path_ = create_subscription<autoware_auto_planning_msgs::msg::Trajectory>(
     "~/input/reference_trajectory", rclcpp::QoS{1}, std::bind(&Controller::onTrajectory, this, _1));
   sub_steering_ = create_subscription<autoware_auto_vehicle_msgs::msg::SteeringReport>(
@@ -86,6 +59,41 @@ Controller::Controller(const rclcpp::NodeOptions & node_options) : Node("control
   }
 }
 
+void Controller::init()
+{
+  static bool initialized = false;
+  if (initialized) {
+    return;
+  }
+  initialized = true;
+  const auto lateral_controller_mode = 
+    getLateralControllerMode(declare_parameter<std::string>("lateral_controller_mode"));
+  switch (lateral_controller_mode) {
+    case LateralControllerMode::MPC: {
+      lateral_controller_ = std::make_shared<mpc_lateral_controller::MpcLateralController>(*this);
+      break;
+    }
+    case LateralControllerMode::PURE_PURSUIT: {
+      lateral_controller_ = std::make_shared<pure_pursuit::PurePursuitLateralController>(shared_from_this());
+      break;
+    }
+    default:
+      throw std::domain_error("[LateralController] invalid algorithm");
+  }
+
+  const auto longitudinal_controller_mode =
+    getLongitudinalControllerMode(declare_parameter<std::string>("longitudinal_controller_mode"));
+  switch (longitudinal_controller_mode) {
+    case LongitudinalControllerMode::PID: {
+      longitudinal_controller_ =
+        std::make_shared<pid_longitudinal_controller::PidLongitudinalController>(*this);
+      break;
+    }
+    default:
+      throw std::domain_error("[LongitudinalController] invalid algorithm");
+  }
+}
+
 Controller::LateralControllerMode Controller::getLateralControllerMode(
   const std::string & controller_mode) const
 {
@@ -105,21 +113,25 @@ Controller::LongitudinalControllerMode Controller::getLongitudinalControllerMode
 
 void Controller::onTrajectory(const autoware_auto_planning_msgs::msg::Trajectory::SharedPtr msg)
 {
+  init();
   current_trajectory_ptr_ = msg;
 }
 
 void Controller::onOdometry(const nav_msgs::msg::Odometry::SharedPtr msg)
 {
+  init();
   current_odometry_ptr_ = msg;
 }
 
 void Controller::onSteering(const autoware_auto_vehicle_msgs::msg::SteeringReport::SharedPtr msg)
 {
+  init();
   current_steering_ptr_ = msg;
 }
 
 void Controller::onAccel(const geometry_msgs::msg::AccelWithCovarianceStamped::SharedPtr msg)
 {
+  init();
   current_accel_ptr_ = msg;
 }
 
@@ -183,6 +195,7 @@ boost::optional<trajectory_follower::InputData> Controller::createInputData(
 
 void Controller::callbackTimerControl()
 {
+  init();
   // 1. create input data
   const auto input_data = createInputData(*get_clock());
   if (!input_data) {

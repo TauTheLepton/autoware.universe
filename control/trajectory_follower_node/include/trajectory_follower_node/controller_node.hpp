@@ -110,6 +110,7 @@ private:
   void publishDebugMarker(
     const trajectory_follower::InputData & input_data,
     const trajectory_follower::LateralOutput & lat_out) const;
+  void init();
 };
 }  // namespace trajectory_follower_node
 }  // namespace autoware::motion::control

@@ -60,7 +60,7 @@ public:
   /**
    * @brief constructor
    */
-  explicit MpcLateralController(rclcpp::Node & node);
+  explicit MpcLateralController(rclcpp::Node::SharedPtr node_ptr);
 
   /**
    * @brief destructor
@@ -68,7 +68,7 @@ public:
   virtual ~MpcLateralController();
 
 private:
-  rclcpp::Node * node_;
+  rclcpp::Node::WeakPtr node_weak_ptr_;
 
   //!< @brief topic publisher for predicted trajectory
   rclcpp::Publisher<autoware_auto_planning_msgs::msg::Trajectory>::SharedPtr m_pub_predicted_traj;

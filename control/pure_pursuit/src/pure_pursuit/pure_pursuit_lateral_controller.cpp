@@ -94,8 +94,9 @@ PurePursuitLateralController::PurePursuitLateralController(rclcpp::Node::SharedP
     "~/debug/ld_outputs", rclcpp::QoS{1});
 
   // Publish predicted trajectory
-  pub_predicted_trajectory_ = node_ptr->create_publisher<autoware_auto_planning_msgs::msg::Trajectory>(
-    "~/output/predicted_trajectory", 1);
+  pub_predicted_trajectory_ =
+    node_ptr->create_publisher<autoware_auto_planning_msgs::msg::Trajectory>(
+      "~/output/predicted_trajectory", 1);
 
   //  Wait for first current pose
   tf_utils::waitForTransform(tf_buffer_, "map", "base_link");
